@@ -3,8 +3,8 @@
 /**
  * @file plugins/auth/ldap/LDAPAuthPlugin.inc.php
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
- * Copyright (c) 2003-2016 John Willinsky
+ * Copyright (c) 2014-2017 Simon Fraser University
+ * Copyright (c) 2003-2017 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class LDAPAuthPlugin
@@ -129,7 +129,7 @@ class LDAPAuthPlugin extends AuthPlugin {
 	 * @param $user User to update
 	 * @return boolean true if successful
 	 */
-	function getUserInfo(&$user) {
+	function getUserInfo($user) {
 		$valid = false;
 		if ($this->open()) {
 			if ($entry = $this->getUserEntry($user->getUsername())) {
@@ -147,7 +147,7 @@ class LDAPAuthPlugin extends AuthPlugin {
 	 * @param $user User to store
 	 * @return boolean true if successful
 	 */
-	function setUserInfo(&$user) {
+	function setUserInfo($user) {
 		$valid = false;
 		if ($this->open()) {
 			if ($entry = $this->getUserEntry($user->getUsername())) {
@@ -187,7 +187,7 @@ class LDAPAuthPlugin extends AuthPlugin {
 	 * @param $user User to create
 	 * @return boolean true if successful
 	 */
-	function createUser(&$user) {
+	function createUser($user) {
 		$valid = false;
 		if ($this->open()) {
 			if (!($entry = $this->getUserEntry($user->getUsername()))) {

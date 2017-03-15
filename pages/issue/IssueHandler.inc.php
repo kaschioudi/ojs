@@ -3,8 +3,8 @@
 /**
  * @file pages/issue/IssueHandler.inc.php
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
- * Copyright (c) 2003-2016 John Willinsky
+ * Copyright (c) 2014-2017 Simon Fraser University
+ * Copyright (c) 2003-2017 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class IssueHandler
@@ -23,8 +23,8 @@ class IssueHandler extends Handler {
 	/**
 	 * Constructor
 	 **/
-	function IssueHandler() {
-		parent::Handler();
+	function __construct() {
+		parent::__construct();
 	}
 
 	/**
@@ -45,9 +45,10 @@ class IssueHandler extends Handler {
 	}
 
 	/**
-	 * @see PKPHandler::initialize()
+	 * @copydoc PKPHandler::initialize()
+	 * @param $args array Arguments list
 	 */
-	function initialize($request, $args) {
+	function initialize($request, $args = array()) {
 		// Get the issue galley
 		$galleyId = isset($args[1]) ? $args[1] : 0;
 		if ($galleyId) {
@@ -74,19 +75,16 @@ class IssueHandler extends Handler {
 	 * Display current issue page.
 	 */
 	function current($args, $request) {
-		$this->setupTemplate($request);
-
 		$journal = $request->getJournal();
-
 		$issueDao = DAORegistry::getDAO('IssueDAO');
 		$issue = $issueDao->getCurrent($journal->getId(), true);
 
-		$templateMgr = TemplateManager::getManager($request);
-
 		if ($issue != null) {
-			$request->redirect(null, 'issue', 'view', $issue->getId(), $request->getQueryArray());
+			$request->redirect(null, 'issue', 'view', $issue->getBestIssueId());
 		}
 
+		$this->setupTemplate($request);
+		$templateMgr = TemplateManager::getManager($request);
 		// consider public identifiers
 		$pubIdPlugins = PluginRegistry::loadCategory('pubIds', true);
 		$templateMgr->assign('pubIdPlugins', $pubIdPlugins);
@@ -126,14 +124,8 @@ class IssueHandler extends Handler {
 	 */
 	function archive($args, $request) {
 		$this->setupTemplate($request);
-		$journal = $request->getJournal();
-
 		$templateMgr = TemplateManager::getManager($request);
-		import('classes.file.PublicFileManager');
-		$publicFileManager = new PublicFileManager();
-		$coverImagePath = $request->getBaseUrl() . '/';
-		$coverImagePath .= $publicFileManager->getJournalFilesPath($journal->getId()) . '/';
-		$templateMgr->assign('coverImagePath', $coverImagePath);
+		$journal = $request->getJournal();
 
 		$rangeInfo = $this->getRangeInfo($request, 'issues');
 		$issueDao = DAORegistry::getDAO('IssueDAO');
@@ -286,10 +278,7 @@ class IssueHandler extends Handler {
 
 		$locale = AppLocale::getLocale();
 
-		import('classes.file.PublicFileManager');
-		$publicFileManager = new PublicFileManager();
 		$templateMgr->assign(array(
-			'coverImagePath' => $request->getBaseUrl() . '/' . $publicFileManager->getJournalFilesPath($journal->getId()) . '/',
 			'locale' => $locale,
 		));
 

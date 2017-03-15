@@ -3,8 +3,8 @@
 /**
  * @file classes/oai/ojs/OAIDAO.inc.php
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
- * Copyright (c) 2003-2016 John Willinsky
+ * Copyright (c) 2014-2017 Simon Fraser University
+ * Copyright (c) 2003-2017 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class OAIDAO
@@ -35,8 +35,8 @@ class OAIDAO extends PKPOAIDAO {
  	/**
 	 * Constructor.
 	 */
-	function OAIDAO() {
-		parent::PKPOAIDAO();
+	function __construct() {
+		parent::__construct();
 		$this->journalDao = DAORegistry::getDAO('JournalDAO');
 		$this->sectionDao = DAORegistry::getDAO('SectionDAO');
 		$this->publishedArticleDao = DAORegistry::getDAO('PublishedArticleDAO');
@@ -50,10 +50,10 @@ class OAIDAO extends PKPOAIDAO {
 	}
 
 	/**
-	 * @see lib/pkp/classes/oai/PKPOAIDAO::getEarliestDatestamp()
+	 * @copydoc PKPOAIDAO::getEarliestDatestampQuery()
 	 */
-	function getEarliestDatestamp($setIds = array()) {
-		return parent::getEarliestDatestamp('SELECT	CASE WHEN COALESCE(dot.date_deleted, a.last_modified) > i.last_modified THEN i.last_modified ELSE COALESCE(dot.date_deleted, a.last_modified) END', $setIds);
+	function getEarliestDatestampQuery() {
+		return 'SELECT CASE WHEN COALESCE(dot.date_deleted, a.last_modified) > i.last_modified THEN i.last_modified ELSE COALESCE(dot.date_deleted, a.last_modified) END';
 	}
 
 	/**

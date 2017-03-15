@@ -1,8 +1,8 @@
 {**
  * plugins/pubIds/urn/templates/settingsForm.tpl
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
- * Copyright (c) 2003-2016 John Willinsky
+ * Copyright (c) 2014-2017 Simon Fraser University
+ * Copyright (c) 2003-2017 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * URN plugin settings
@@ -76,7 +76,7 @@
 	{/fbvFormArea}
 	{fbvFormArea id="urnReassignFormArea" title="plugins.pubIds.urn.manager.settings.urnReassign"}
 		{fbvFormSection}
-			<span class="instruct">{translate key="plugins.pubIds.urn.manager.settings.urnReassign.description"}</span><br/>
+			<div class="instruct">{translate key="plugins.pubIds.urn.manager.settings.urnReassign.description"}</div>
 			{include file="linkAction/linkAction.tpl" action=$clearPubIdsLinkAction contextId="urnSettingsForm"}
 		{/fbvFormSection}
 	{/fbvFormArea}

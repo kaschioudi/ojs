@@ -3,7 +3,7 @@
 /**
  * @file plugins/paymethod/paypal/PayPalPlugin.inc.php
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
+ * Copyright (c) 2014-2017 Simon Fraser University
  * Copyright (c) 2006-2009 Gunther Eysenbach, Juan Pablo Alperin, MJ Suhonos
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
@@ -19,8 +19,8 @@ class PayPalPlugin extends PaymethodPlugin {
 	/**
 	 * Constructor
 	 */
-	function PayPalPlugin() {
-		parent::PaymethodPlugin();
+	function __construct() {
+		parent::__construct();
 	}
 
 	/**
@@ -104,7 +104,7 @@ class PayPalPlugin extends PaymethodPlugin {
 	 * @param $params
 	 * @param $smarty Smarty
 	 */
-	function displayPaymentSettingsForm(&$params, &$smarty) {
+	function displayPaymentSettingsForm(&$params, $smarty) {
 		$smarty->assign('isCurlInstalled', $this->isCurlInstalled());
 		return parent::displayPaymentSettingsForm($params, $smarty);
 	}
@@ -228,7 +228,7 @@ class PayPalPlugin extends PaymethodPlugin {
 							$ojsPaymentManager = new OJSPaymentManager($request);
 
 							// Verify the cost and user details as per PayPal spec.
-							$queuedPayment =& $ojsPaymentManager->getQueuedPayment($queuedPaymentId);
+							$queuedPayment = $ojsPaymentManager->getQueuedPayment($queuedPaymentId);
 							if (!$queuedPayment) {
 								// The queued payment entry is missing. Complain.
 								$mail->assignParams(array(

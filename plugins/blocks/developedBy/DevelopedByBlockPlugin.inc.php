@@ -3,8 +3,8 @@
 /**
  * @file plugins/blocks/developedBy/DevelopedByBlockPlugin.inc.php
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
- * Copyright (c) 2003-2016 John Willinsky
+ * Copyright (c) 2014-2017 Simon Fraser University
+ * Copyright (c) 2003-2017 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class DevelopedByBlockPlugin
@@ -21,10 +21,11 @@ class DevelopedByBlockPlugin extends BlockPlugin {
 	/**
 	 * Determine whether the plugin is enabled. Overrides parent so that
 	 * the plugin will be displayed during install.
+	 * @param $contextId int Context ID (journal/press)
 	 */
-	function getEnabled() {
+	function getEnabled($contextId = null) {
 		if (!Config::getVar('general', 'installed')) return true;
-		return parent::getEnabled();
+		return parent::getEnabled($contextId);
 	}
 
 	/**
@@ -46,20 +47,22 @@ class DevelopedByBlockPlugin extends BlockPlugin {
 	/**
 	 * Get the block context. Overrides parent so that the plugin will be
 	 * displayed during install.
+	 * @param $contextId int optional
 	 * @return int
 	 */
-	function getBlockContext() {
-		if (!Config::getVar('general', 'installed')) return BLOCK_CONTEXT_LEFT_SIDEBAR;
-		return parent::getBlockContext();
+	function getBlockContext($contextId = null) {
+		if (!Config::getVar('general', 'installed')) return BLOCK_CONTEXT_SIDEBAR;
+		return parent::getBlockContext($contextId);
 	}
 
 	/**
 	 * Determine the plugin sequence. Overrides parent so that
 	 * the plugin will be displayed during install.
+	 * @param $contextId int Context ID (journal/press)
 	 */
-	function getSeq() {
+	function getSeq($contextId = null) {
 		if (!Config::getVar('general', 'installed')) return 1;
-		return parent::getSeq();
+		return parent::getSeq($contextId);
 	}
 
 	/**

@@ -3,8 +3,8 @@
 /**
  * @file pages/information/InformationHandler.inc.php
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
- * Copyright (c) 2003-2016 John Willinsky
+ * Copyright (c) 2014-2017 Simon Fraser University
+ * Copyright (c) 2003-2017 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class InformationHandler
@@ -19,8 +19,8 @@ class InformationHandler extends Handler {
 	/**
 	 * Constructor
 	 **/
-	function InformationHandler() {
-		parent::Handler();
+	function __construct() {
+		parent::__construct();
 	}
 
 	/**
@@ -29,11 +29,9 @@ class InformationHandler extends Handler {
 	 * @param $request PKPRequest
 	 */
 	function index($args, $request) {
+		$this->setupTemplate($request);
+		$this->validate(null, $request);
 		$journal = $request->getJournal();
-		if (!$journal) $request->redirect('index');
-
-		$this->validate();
-		$this->setupTemplate($request, $journal);
 
 		switch(array_shift($args)) {
 			case 'readers':
@@ -90,11 +88,10 @@ class InformationHandler extends Handler {
 	/**
 	 * Initialize the template.
 	 * @param $request PKPRequest
-	 * @param $journal Journal
 	 */
-	function setupTemplate($request, $journal) {
+	function setupTemplate($request) {
 		parent::setupTemplate($request);
-		if (!$journal->getSetting('restrictSiteAccess')) {
+		if (!$request->getJournal()->getSetting('restrictSiteAccess')) {
 			$templateMgr = TemplateManager::getManager($request);
 			$templateMgr->setCacheability(CACHEABILITY_PUBLIC);
 		}

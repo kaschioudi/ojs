@@ -3,8 +3,8 @@
 /**
  * @file controllers/modals/editorDecision/form/InitiateExternalReviewForm.inc.php
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
- * Copyright (c) 2003-2016 John Willinsky
+ * Copyright (c) 2014-2017 Simon Fraser University
+ * Copyright (c) 2003-2017 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class InitiateReviewForm
@@ -24,16 +24,18 @@ class InitiateExternalReviewForm extends EditorDecisionForm {
 	 * @param $decision int SUBMISSION_EDITOR_DECISION_...
 	 * @param $stageId int WORKFLOW_STAGE_ID_...
 	 */
-	function InitiateExternalReviewForm($submission, $decision, $stageId) {
+	function __construct($submission, $decision, $stageId) {
 		AppLocale::requireComponents(LOCALE_COMPONENT_APP_SUBMISSION);
-		parent::EditorDecisionForm($submission, $decision, $stageId, 'controllers/modals/editorDecision/form/initiateExternalReviewForm.tpl');
+		parent::__construct($submission, $decision, $stageId, 'controllers/modals/editorDecision/form/initiateExternalReviewForm.tpl');
 	}
 
 	//
 	// Implement protected template methods from Form
 	//
 	/**
-	 * @copydoc Form::execute()
+	 * Execute the form.
+	 * @param $args array
+	 * @param $request PKPRequest
 	 */
 	function execute($args, $request) {
 		// Retrieve the submission.

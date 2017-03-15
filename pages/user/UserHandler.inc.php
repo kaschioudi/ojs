@@ -3,8 +3,8 @@
 /**
  * @file pages/user/UserHandler.inc.php
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
- * Copyright (c) 2003-2016 John Willinsky
+ * Copyright (c) 2014-2017 Simon Fraser University
+ * Copyright (c) 2003-2017 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class UserHandler
@@ -19,8 +19,8 @@ class UserHandler extends PKPUserHandler {
 	/**
 	 * Constructor
 	 */
-	function UserHandler() {
-		parent::PKPUserHandler();
+	function __construct() {
+		parent::__construct();
 	}
 
 	/**
@@ -29,7 +29,7 @@ class UserHandler extends PKPUserHandler {
 	 * @param $request PKPRequest
 	 */
 	function gifts($args, $request) {
-		$this->validate();
+		$this->validate(null, $request);
 
 		$journal = $request->getJournal();
 		if (!$journal) $request->redirect(null, 'dashboard');
@@ -57,10 +57,12 @@ class UserHandler extends PKPUserHandler {
 		$this->setupTemplate($request);
 		$templateMgr = TemplateManager::getManager($request);
 
-		$templateMgr->assign('journalTitle', $journal->getLocalizedName());
-		$templateMgr->assign('journalPath', $journal->getPath());
-		$templateMgr->assign('acceptGiftSubscriptionPayments', $acceptGiftSubscriptionPayments);
-		$templateMgr->assign('giftSubscriptions', $giftSubscriptions);
+		$templateMgr->assign(array(
+			'journalTitle' => $journal->getLocalizedName(),
+			'journalPath' => $journal->getPath(),
+			'acceptGiftSubscriptionPayments' => $acceptGiftSubscriptionPayments,
+			'giftSubscriptions' => $giftSubscriptions,
+		));
 		$templateMgr->display('user/gifts.tpl');
 
 	}
@@ -71,7 +73,7 @@ class UserHandler extends PKPUserHandler {
 	 * @param $request PKPRequest
 	 */
 	function redeemGift($args, $request) {
-		$this->validate();
+		$this->validate(null, $request);
 
 		if (empty($args)) $request->redirect(null, 'dashboard');
 
@@ -137,7 +139,7 @@ class UserHandler extends PKPUserHandler {
 	 * @param $request PKPRequest
 	 */
 	function subscriptions($args, $request) {
-		$this->validate();
+		$this->validate(null, $request);
 
 		$journal = $request->getJournal();
 		if (!$journal) $request->redirect(null, 'dashboard');
@@ -178,16 +180,18 @@ class UserHandler extends PKPUserHandler {
 
 		$this->setupTemplate($request);
 
-		$templateMgr->assign('subscriptionName', $subscriptionName);
-		$templateMgr->assign('subscriptionEmail', $subscriptionEmail);
-		$templateMgr->assign('subscriptionPhone', $subscriptionPhone);
-		$templateMgr->assign('subscriptionMailingAddress', $subscriptionMailingAddress);
-		$templateMgr->assign('subscriptionAdditionalInformation', $subscriptionAdditionalInformation);
-		$templateMgr->assign('journalTitle', $journal->getLocalizedName());
-		$templateMgr->assign('journalPath', $journal->getPath());
-		$templateMgr->assign('acceptSubscriptionPayments', $acceptSubscriptionPayments);
-		$templateMgr->assign('individualSubscriptionTypesExist', $individualSubscriptionTypesExist);
-		$templateMgr->assign('institutionalSubscriptionTypesExist', $institutionalSubscriptionTypesExist);
+		$templateMgr->assign(array(
+			'subscriptionName' => $subscriptionName,
+			'subscriptionEmail' => $subscriptionEmail,
+			'subscriptionPhone' => $subscriptionPhone,
+			'subscriptionMailingAddress' => $subscriptionMailingAddress,
+			'subscriptionAdditionalInformation' => $subscriptionAdditionalInformation,
+			'journalTitle' => $journal->getLocalizedName(),
+			'journalPath' => $journal->getPath(),
+			'acceptSubscriptionPayments' => $acceptSubscriptionPayments,
+			'individualSubscriptionTypesExist' => $individualSubscriptionTypesExist,
+			'institutionalSubscriptionTypesExist' => $institutionalSubscriptionTypesExist,
+		));
 		$templateMgr->display('user/subscriptions.tpl');
 
 	}
@@ -202,54 +206,6 @@ class UserHandler extends PKPUserHandler {
 		   $journal->getSetting('contactName') == '' || $journal->getLocalizedSetting('abbreviation') == '') {
 			return true;
 		} else return false;
-	}
-
-	/**
-	 * Become a given role.
-	 * @param $args array
-	 * @param $request PKPRequest
-	 */
-	function become($args, $request) {
-		parent::validate(true);
-
-		$journal = $request->getJournal();
-		$user = $request->getUser();
-
-		switch (array_shift($args)) {
-			case 'author':
-				$roleId = ROLE_ID_AUTHOR;
-				$deniedKey = 'user.noRoles.submitArticleRegClosed';
-				break;
-			case 'reviewer':
-				$roleId = ROLE_ID_REVIEWER;
-				$deniedKey = 'user.noRoles.regReviewerClosed';
-				break;
-			default:
-				return $request->redirect(null, null, 'index');
-		}
-
-		$userGroupDao = DAORegistry::getDAO('UserGroupDAO');
-		$userGroup = $userGroupDao->getDefaultByRoleId($journal->getId(), $roleId);
-		if ($userGroup->getPermitSelfRegistration()) {
-			$userGroupDao->assignUserToGroup($user->getId(), $userGroup->getId());
-			$request->redirectUrl($request->getUserVar('source'));
-		} else {
-			$templateMgr = TemplateManager::getManager($request);
-			$templateMgr->assign('message', $deniedKey);
-			return $templateMgr->display('frontend/pages/message.tpl');
-		}
-	}
-
-	/**
-	 * Validate that user is logged in.
-	 * Redirects to login form if not logged in.
-	 * @param $loginCheck boolean check if user is logged in
-	 */
-	function validate($loginCheck = true) {
-		parent::validate();
-		if ($loginCheck && !Validation::isLoggedIn()) {
-			Validation::redirectLogin();
-		}
 	}
 
 	/**
@@ -271,7 +227,7 @@ class UserHandler extends PKPUserHandler {
 	 * @param $request PKPRequest
 	 */
 	function purchaseSubscription($args, $request) {
-		$this->validate();
+		$this->validate(null, $request);
 
 		if (empty($args)) $request->redirect(null, 'dashboard');
 
@@ -350,7 +306,7 @@ class UserHandler extends PKPUserHandler {
 	 * @param $request PKPRequest
 	 */
 	function payPurchaseSubscription($args, $request) {
-		$this->validate();
+		$this->validate(null, $request);
 
 		if (empty($args)) $request->redirect(null, 'dashboard');
 
@@ -454,7 +410,7 @@ class UserHandler extends PKPUserHandler {
 	 * @param $request PKPRequest
 	 */
 	function completePurchaseSubscription($args, $request) {
-		$this->validate();
+		$this->validate(null, $request);
 
 		if (count($args) != 2) $request->redirect(null, 'dashboard');
 
@@ -503,7 +459,7 @@ class UserHandler extends PKPUserHandler {
 	 * @param $request PKPRequest
 	 */
 	function payRenewSubscription($args, $request) {
-		$this->validate();
+		$this->validate(null, $request);
 
 		if (count($args) != 2) $request->redirect(null, 'dashboard');
 
@@ -559,7 +515,8 @@ class UserHandler extends PKPUserHandler {
 	 * @param $request PKPRequest
 	 */
 	function payMembership($args, $request) {
-		$this->validate();
+		$this->validate(null, $request);
+
 		$this->setupTemplate($request);
 
 		import('classes.payment.ojs.OJSPaymentManager');

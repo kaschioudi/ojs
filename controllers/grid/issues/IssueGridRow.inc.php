@@ -3,8 +3,8 @@
 /**
  * @file controllers/grid/issues/IssueGridRow.inc.php
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
- * Copyright (c) 2003-2016 John Willinsky
+ * Copyright (c) 2014-2017 Simon Fraser University
+ * Copyright (c) 2003-2017 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * @class IssueGridRow
@@ -19,8 +19,8 @@ class IssueGridRow extends GridRow {
 	/**
 	 * Constructor
 	 */
-	function IssueGridRow() {
-		parent::GridRow();
+	function __construct() {
+		parent::__construct();
 	}
 
 	//
@@ -96,6 +96,23 @@ class IssueGridRow extends GridRow {
 							),
 						__('editor.issues.publishIssue'),
 						'advance'
+					)
+				);
+			}
+
+			if ($issue->getDatePublished() && !$issue->getCurrent()) {
+				$this->addAction(
+					new LinkAction(
+						'setCurrentIssue',
+						new RemoteActionConfirmationModal(
+							$request->getSession(),
+							__('editor.issues.confirmSetCurrentIssue'),
+							__('editor.issues.currentIssue'),
+							$router->url($request, null, null, 'setCurrentIssue', null, array('issueId' => $issueId)),
+							'modal_delete'
+						),
+						__('editor.issues.currentIssue'),
+						'delete'
 					)
 				);
 			}

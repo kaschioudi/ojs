@@ -1,8 +1,8 @@
 {**
  * plugins/pubIds/doi/templates/settingsForm.tpl
  *
- * Copyright (c) 2014-2016 Simon Fraser University Library
- * Copyright (c) 2003-2016 John Willinsky
+ * Copyright (c) 2014-2017 Simon Fraser University
+ * Copyright (c) 2003-2017 John Willinsky
  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
  *
  * DOI plugin settings
@@ -59,10 +59,18 @@
 	{/fbvFormArea}
 	{fbvFormArea id="doiReassignFormArea" title="plugins.pubIds.doi.manager.settings.doiReassign"}
 		{fbvFormSection}
-			<span class="instruct">{translate key="plugins.pubIds.doi.manager.settings.doiReassign.description"}</span><br/>
+			<div class="instruct">{translate key="plugins.pubIds.doi.manager.settings.doiReassign.description"}</div>
 			{include file="linkAction/linkAction.tpl" action=$clearPubIdsLinkAction contextId="doiSettingsForm"}
 		{/fbvFormSection}
 	{/fbvFormArea}
+	{if ($enableIssueDoi || $enableSubmissionDoi || $enableRepresentationDoi) && $doiPrefix && $doiSuffix && $doiSuffix != 'customId' }
+		{fbvFormArea id="doiAssignJournalWideFormArea" title="plugins.pubIds.doi.manager.settings.doiAssignJournalWide"}
+			{fbvFormSection}
+				<div class="instruct">{translate key="plugins.pubIds.doi.manager.settings.doiAssignJournalWide.description"}</div>
+				{include file="linkAction/linkAction.tpl" action=$assignJournalWidePubIdsLinkAction contextId="doiSettingsForm"}
+			{/fbvFormSection}
+		{/fbvFormArea}
+	{/if}
 	{fbvFormButtons submitText="common.save"}
 </form>
 <p><span class="formRequired">{translate key="common.requiredField"}</span></p>
