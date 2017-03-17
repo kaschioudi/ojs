@@ -20,12 +20,12 @@ class SubmissionHandler extends APIHandler {
 	/**
 	 * Constructor
 	 */
-	public function SubmissionHandler() {
+	public function __construct() {
 		$roles = array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR, ROLE_ID_ASSISTANT, ROLE_ID_REVIEWER, ROLE_ID_AUTHOR);
 		$this->_endpoints = array(
 			'GET' => array (
 				array(
-					'pattern' => '/{contextPath}/api/{version}/submissions/{submissionId}/files/{fileId}',
+					'pattern' => '/{contextPath}/api/{version}/submissions/{submissionId}/files',
 					'handler' => array($this,'getFile'),
 					'roles' => $roles
 				),
@@ -36,17 +36,21 @@ class SubmissionHandler extends APIHandler {
 				),
 			)
 		);
-		parent::APIHandler();
+		parent::__construct();
 	}
 
 	//
 	// Implement methods from PKPHandler
 	//
 	function authorize($request, &$args, $roleAssignments) {
-		//import('lib.pkp.classes.security.authorization.SubmissionFileAccessPolicy');
-		//$this->addPolicy(new SubmissionFileAccessPolicy($request, $args, $roleAssignments, SUBMISSION_FILE_ACCESS_READ));
 		import('lib.pkp.classes.security.authorization.SubmissionAccessPolicy');
 		$this->addPolicy(new SubmissionAccessPolicy($request, $args, $roleAssignments));
+
+		if (isset($args[2]) && ($args[2] == 'files')) {
+			import('lib.pkp.classes.security.authorization.SubmissionFileAccessPolicy');
+			$this->addPolicy(new SubmissionFileAccessPolicy($request, $args, $roleAssignments, SUBMISSION_FILE_ACCESS_READ));
+		}
+
 		return parent::authorize($request, $args, $roleAssignments);
 	}
 
@@ -77,9 +81,6 @@ class SubmissionHandler extends APIHandler {
 	 * @return Response
 	 */
 	public function getFile($slimRequest, $response, $args) {
-		//$fileId = $slimRequest->getAttribute('fileId');
-		//$response->getBody()->write("Serving file with id: {$fileId}");
-		//return $response;
 		$request = $this->_request;
 		$submissionFile = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION_FILE);
 		assert($submissionFile); // Should have been validated already
