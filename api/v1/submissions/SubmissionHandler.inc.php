@@ -54,22 +54,6 @@ class SubmissionHandler extends APIHandler {
 		return parent::authorize($request, $args, $roleAssignments);
 	}
 
-	/**
-	 * Get the entity ID for a specified parameter name.
-	 * (Parameter names are generally defined in authorization policies
-	 * @return int|string?
-	 */
-	public function getEntityId($parameterName) {
-		switch ($parameterName) {
-			case 'submissionId':
-				$parts = explode('/', trim($_SERVER['PATH_INFO'], '/'));
-				return $parts[4];
-				break;
-		}
-		return parent::getEntityId($parameterName);
-	}
-
-
 	//
 	// Public handler methods
 	//
