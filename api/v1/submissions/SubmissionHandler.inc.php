@@ -43,10 +43,19 @@ class SubmissionHandler extends APIHandler {
 	// Implement methods from PKPHandler
 	//
 	function authorize($request, &$args, $roleAssignments) {
-		import('lib.pkp.classes.security.authorization.SubmissionAccessPolicy');
-		$this->addPolicy(new SubmissionAccessPolicy($request, $args, $roleAssignments));
+		$routeName = null;
+		$slimRequest = $this->getSlimRequest();
 
-		if (isset($args[2]) && ($args[2] == 'files')) {
+		if (!is_null($slimRequest) && ($route = $slimRequest->getAttribute('route'))) {
+			$routeName = $route->getName();
+		}
+
+		if (in_array($routeName, array('getFile', 'submissionMetadata'))) {
+			import('lib.pkp.classes.security.authorization.SubmissionAccessPolicy');
+			$this->addPolicy(new SubmissionAccessPolicy($request, $args, $roleAssignments));
+		}
+
+		if ($routeName == 'getFile') {
 			import('lib.pkp.classes.security.authorization.SubmissionFileAccessPolicy');
 			$this->addPolicy(new SubmissionFileAccessPolicy($request, $args, $roleAssignments, SUBMISSION_FILE_ACCESS_READ));
 		}
