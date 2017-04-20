@@ -22,15 +22,16 @@ class SubmissionHandler extends APIHandler {
 	 */
 	public function __construct() {
 		$roles = array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR, ROLE_ID_ASSISTANT, ROLE_ID_REVIEWER, ROLE_ID_AUTHOR);
+		$rootPattern = '/{contextPath}/api/{version}/submissions';
 		$this->_endpoints = array(
 			'GET' => array (
 				array(
-					'pattern' => '/{contextPath}/api/{version}/submissions/{submissionId}/files',
+					'pattern' => "{$rootPattern}/{submissionId}/files",
 					'handler' => array($this,'getFile'),
 					'roles' => $roles
 				),
 				array(
-					'pattern' => '/{contextPath}/api/{version}/submissions/{submissionId}',
+					'pattern' => "{$rootPattern}/{submissionId}",
 					'handler' => array($this,'submissionMetadata'),
 					'roles' => $roles
 				),
