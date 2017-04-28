@@ -26,7 +26,7 @@ class BackendHandler extends APIHandler {
 		$this->_endpoints = array(
 			'GET' => array(
 				array(
-					'pattern' => "{$rootPattern}/submissions/list",
+					'pattern' => "{$rootPattern}/submissions",
 					'handler' => array($this, 'getSubmissionList'),
 					'roles' => array(
 						ROLE_ID_SITE_ADMIN,
@@ -105,11 +105,19 @@ class BackendHandler extends APIHandler {
 		
 		import('lib.pkp.classes.core.ServicesContainer');
 		$sContainer = ServicesContainer::instance();
-		
 		$submissionService = $sContainer->get('submission');
-		$submissions = $submissionService->retrieveSubmissionList(
-			$contextId, $orderColumn, $orderDirection, $assignee, $statuses, $searchPhrase, $count, $page
+
+		$params = array(
+			'orderColumn' => $orderColumn,
+			'orderDirection' => $orderDirection,
+			'assignedTo' => $assignee,
+			'statuses' => $statuses,
+			'searchPhrase' => $searchPhrase,
+			'count' => $count,
+			'page' => $page,
 		);
+
+		$submissions = $submissionService->retrieveSubmissionList($contextId, $params);
 		
 		return $response->withJson($submissions);
 	}

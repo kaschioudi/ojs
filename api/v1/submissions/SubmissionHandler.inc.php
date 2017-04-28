@@ -15,6 +15,7 @@
  */
 
 import('lib.pkp.classes.handler.APIHandler');
+import('lib.pkp.classes.core.ServicesContainer');
 
 class SubmissionHandler extends APIHandler {
 	/**
@@ -27,7 +28,7 @@ class SubmissionHandler extends APIHandler {
 			'GET' => array (
 				array(
 					'pattern' => "{$rootPattern}/{submissionId}/files",
-					'handler' => array($this,'getFile'),
+					'handler' => array($this,'getFiles'),
 					'roles' => $roles
 				),
 				array(
@@ -51,41 +52,58 @@ class SubmissionHandler extends APIHandler {
 			$routeName = $route->getName();
 		}
 
-		if (in_array($routeName, array('getFile', 'submissionMetadata'))) {
+		if (in_array($routeName, array('getFiles', 'submissionMetadata'))) {
 			import('lib.pkp.classes.security.authorization.SubmissionAccessPolicy');
 			$this->addPolicy(new SubmissionAccessPolicy($request, $args, $roleAssignments));
 		}
 
-		if ($routeName == 'getFile') {
-			import('lib.pkp.classes.security.authorization.SubmissionFileAccessPolicy');
-			$this->addPolicy(new SubmissionFileAccessPolicy($request, $args, $roleAssignments, SUBMISSION_FILE_ACCESS_READ));
+		if ($routeName == 'getFiles') {
+			$stageId = $slimRequest->getQueryParam('stageId', WORKFLOW_STAGE_ID_SUBMISSION);
+			import('lib.pkp.classes.security.authorization.WorkflowStageAccessPolicy');
+			$this->addPolicy(new WorkflowStageAccessPolicy($request, $args, $roleAssignments, 'submissionId', $stageId));
 		}
 
 		return parent::authorize($request, $args, $roleAssignments);
 	}
 
-	//
-	// Public handler methods
-	//
 	/**
-	 * Handle file download
+	 * Retrieve submission file list
+	 *
 	 * @param $slimRequest Request Slim request object
 	 * @param $response Response object
 	 * @param array $args arguments
 	 * @return Response
 	 */
-	public function getFile($slimRequest, $response, $args) {
-		$request = $this->_request;
-		$submissionFile = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION_FILE);
-		assert($submissionFile); // Should have been validated already
+	public function getFiles($slimRequest, $response, $args) {
+		$request = $this->getRequest();
 		$context = $request->getContext();
-		import('lib.pkp.classes.file.SubmissionFileManager');
-		$fileManager = new SubmissionFileManager($context->getId(), $submissionFile->getSubmissionId());
-		if (!$fileManager->downloadFile($submissionFile->getFileId(), $submissionFile->getRevision(), false, $submissionFile->getClientFileName())) {
-			error_log('FileApiHandler: File ' . $submissionFile->getFilePath() . ' does not exist or is not readable!');
-			header('HTTP/1.0 500 Internal Server Error');
-			fatalError('500 Internal Server Error');
+		$data = array();
+
+		$sContainer = ServicesContainer::instance();
+		$submissionService = $sContainer->get('submission');
+
+		try {
+			$submissionId = $this->getParameter('submissionId');
+			$fileStage = $slimRequest->getQueryParam('fileStage', null);
+			$submissionFiles = $submissionService->getFiles($context->getId(), $submissionId, $fileStage);
+			foreach ($submissionFiles as $submissionFile) {
+				$data[] = array(
+					'fileId'			=> $submissionFile->getFileId(),
+					'revision'			=> $submissionFile->getRevision(),
+					'submissionId'		=> $submissionFile->getSubmissionId(),
+					'filename'			=> $submissionFile->getName(),
+					'fileLabel'			=> $submissionFile->getFileLabel(),
+					'fileStage'			=> $submissionFile->getFileStage(),
+					'uploaderUserId'	=> $submissionFile->getUploaderUserId(),
+					'userGroupId'		=> $submissionFile->getUserGroupId()
+				);
+			}
 		}
+		catch (App\Services\Exceptions\InvalidSubmissionException $e) {
+			return $response->withStatus(404)->withJsonError('api.submissions.404.invalidSubmission');
+		}
+
+		return $response->withJson($data, 200);
 	}
 
 	/**
