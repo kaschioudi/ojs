@@ -27,14 +27,24 @@ class SubmissionHandler extends APIHandler {
 		$this->_endpoints = array(
 			'GET' => array (
 				array(
+					'pattern' => "{$rootPattern}/{submissionId}",
+					'handler' => array($this,'submissionMetadata'),
+					'roles' => $roles
+				),
+				array(
 					'pattern' => "{$rootPattern}/{submissionId}/files",
 					'handler' => array($this,'getFiles'),
 					'roles' => $roles
 				),
 				array(
-					'pattern' => "{$rootPattern}/{submissionId}",
-					'handler' => array($this,'submissionMetadata'),
-					'roles' => $roles
+					'pattern' => "{$rootPattern}/{submissionId}/participants",
+					'handler' => array($this,'getParticipants'),
+					'roles' => array(ROLE_ID_ASSISTANT, ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR)		// as per StageParticipantGridHandler::__construct()
+				),
+				array(
+					'pattern' => "{$rootPattern}/{submissionId}/galleys",
+					'handler' => array($this,'getGalleys'),
+					'roles' => array(ROLE_ID_ASSISTANT, ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR)		// as per StageParticipantGridHandler::__construct()
 				),
 			)
 		);
@@ -57,10 +67,15 @@ class SubmissionHandler extends APIHandler {
 			$this->addPolicy(new SubmissionAccessPolicy($request, $args, $roleAssignments));
 		}
 
-		if ($routeName == 'getFiles') {
+		if (in_array($routeName, array('getFiles','getParticipants'))) {
 			$stageId = $slimRequest->getQueryParam('stageId', WORKFLOW_STAGE_ID_SUBMISSION);
 			import('lib.pkp.classes.security.authorization.WorkflowStageAccessPolicy');
 			$this->addPolicy(new WorkflowStageAccessPolicy($request, $args, $roleAssignments, 'submissionId', $stageId));
+		}
+
+		if ($routeName == 'getGalleys') {
+			import('lib.pkp.classes.security.authorization.WorkflowStageAccessPolicy');
+			$this->addPolicy(new WorkflowStageAccessPolicy($request, $args, $roleAssignments, 'submissionId', WORKFLOW_STAGE_ID_PRODUCTION));
 		}
 
 		return parent::authorize($request, $args, $roleAssignments);
@@ -72,6 +87,7 @@ class SubmissionHandler extends APIHandler {
 	 * @param $slimRequest Request Slim request object
 	 * @param $response Response object
 	 * @param array $args arguments
+	 *
 	 * @return Response
 	 */
 	public function getFiles($slimRequest, $response, $args) {
@@ -84,7 +100,7 @@ class SubmissionHandler extends APIHandler {
 
 		try {
 			$submissionId = $this->getParameter('submissionId');
-			$fileStage = $slimRequest->getQueryParam('fileStage', null);
+			$fileStage = $slimRequest->getQueryParam('fileStage');
 			$submissionFiles = $submissionService->getFiles($context->getId(), $submissionId, $fileStage);
 			foreach ($submissionFiles as $submissionFile) {
 				$data[] = array(
@@ -101,6 +117,66 @@ class SubmissionHandler extends APIHandler {
 		}
 		catch (App\Services\Exceptions\InvalidSubmissionException $e) {
 			return $response->withStatus(404)->withJsonError('api.submissions.404.invalidSubmission');
+		}
+
+		return $response->withJson($data, 200);
+	}
+
+	/**
+	 * Retrieve participant list by stage
+	 *
+	 * @param $slimRequest Request Slim request object
+	 * @param $response Response object
+	 * @param array $args arguments
+	 *
+	 * @return Response
+	 */
+	public function getParticipants($slimRequest, $response, $args) {
+		$request = $this->getRequest();
+		$context = $request->getContext();
+		$data = array();
+
+		$sContainer = ServicesContainer::instance();
+		$submissionService = $sContainer->get('submission');
+
+		try {
+			$submissionId = $this->getParameter('submissionId');
+			$stageId = $slimRequest->getQueryParam('stageId', WORKFLOW_STAGE_ID_SUBMISSION);
+			$data = $submissionService->getParticipantsByStage($context->getId(), $submissionId, $stageId);
+		}
+		catch (App\Services\Exceptions\InvalidSubmissionException $e) {
+			return $response->withStatus(404)->withJsonError('api.submissions.404.invalidSubmission');
+		}
+
+		return $response->withJson($data, 200);
+	}
+
+	/**
+	 * Retrieve galley list
+	 *
+	 * @param $slimRequest Request Slim request object
+	 * @param $response Response object
+	 * @param array $args arguments
+	 *
+	 * @return Response
+	 */
+	public function getGalleys($slimRequest, $response, $args) {
+		$request = $this->getRequest();
+		$context = $request->getContext();
+		$data = array();
+
+		$sContainer = ServicesContainer::instance();
+		$submissionService = $sContainer->get('submission');
+
+		try {
+			$submissionId = $this->getParameter('submissionId');
+			$data = $submissionService->getGalleys($context->getId(), $submissionId);
+		}
+		catch (App\Services\Exceptions\SubmissionStageNotValidException $e) {
+			return $response->withJson(array('error' => 'api.submissions.stageNotValid'), 400);
+		}
+		catch (App\Services\Exceptions\InvalidSubmissionException $e) {
+			return $response->withJson(array('error' => 'api.submissions.invalid'), 404);
 		}
 
 		return $response->withJson($data, 200);
