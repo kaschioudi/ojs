@@ -44,7 +44,7 @@ class SubmissionHandler extends APIHandler {
 				array(
 					'pattern' => "{$rootPattern}/{submissionId}/galleys",
 					'handler' => array($this,'getGalleys'),
-					'roles' => array(ROLE_ID_ASSISTANT, ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR)		// as per StageParticipantGridHandler::__construct()
+					'roles' => $roles
 				),
 			)
 		);
@@ -116,7 +116,10 @@ class SubmissionHandler extends APIHandler {
 			}
 		}
 		catch (App\Services\Exceptions\InvalidSubmissionException $e) {
-			return $response->withStatus(404)->withJsonError('api.submissions.404.invalidSubmission');
+			return $response->withJson(array(
+				'error' => 'api.submissions.invalid',
+				'errorMsg' => __('api.submissions.invalid')
+			), 404);
 		}
 
 		return $response->withJson($data, 200);
@@ -145,7 +148,10 @@ class SubmissionHandler extends APIHandler {
 			$data = $submissionService->getParticipantsByStage($context->getId(), $submissionId, $stageId);
 		}
 		catch (App\Services\Exceptions\InvalidSubmissionException $e) {
-			return $response->withStatus(404)->withJsonError('api.submissions.404.invalidSubmission');
+			return $response->withJson(array(
+				'error' => 'api.submissions.invalid',
+				'errorMsg' => __('api.submissions.invalid')
+			), 404);
 		}
 
 		return $response->withJson($data, 200);
@@ -173,10 +179,16 @@ class SubmissionHandler extends APIHandler {
 			$data = $submissionService->getGalleys($context->getId(), $submissionId);
 		}
 		catch (App\Services\Exceptions\SubmissionStageNotValidException $e) {
-			return $response->withJson(array('error' => 'api.submissions.stageNotValid'), 400);
+			return $response->withJson(array(
+					'error' => 'api.submissions.stageNotValid',
+					'errorMsg' => __('api.submissions.stageNotValid')
+			), 400);
 		}
 		catch (App\Services\Exceptions\InvalidSubmissionException $e) {
-			return $response->withJson(array('error' => 'api.submissions.invalid'), 404);
+			return $response->withJson(array(
+					'error' => 'api.submissions.invalid',
+					'errorMsg' => __('api.submissions.invalid')
+			), 404);
 		}
 
 		return $response->withJson($data, 200);
