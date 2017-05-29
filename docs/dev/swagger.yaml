@@ -29,6 +29,8 @@ tags:
     description: "Submission galleys"
   - name: "Issues"
     description: "Issue listing"
+  - name: "Articles"
+    description: "Published articles"
   - name: "Backend"
     description: "OJS UI sustaining endpoints"
 paths:
@@ -215,6 +217,23 @@ paths:
       responses:
         '200':
           description: issue metadata
+          
+  '/articles/{articleId}':
+    get:
+      tags:
+        - Articles
+      summary: Article details
+      description: |
+        Get information about a specific published article
+      parameters:
+        - name: articleId
+          in: path
+          description: Article ID
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: published article
   
   '/backend/submissions':
     get:
