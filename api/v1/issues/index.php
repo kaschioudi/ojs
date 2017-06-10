@@ -17,4 +17,4 @@
  */
 
 import('api.v1.issues.IssuesHandler');
-return new IssuesHandler();
+return new IssuesHandler(new App\Repositories\IssueRepository());
