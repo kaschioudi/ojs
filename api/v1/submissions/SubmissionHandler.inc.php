@@ -40,7 +40,7 @@ class SubmissionHandler extends APIHandler {
 				array(
 					'pattern' => $this->getEndpointPattern() . '/{submissionId}/participants',
 					'handler' => array($this,'getParticipants'),
-					'roles' => array(ROLE_ID_ASSISTANT, ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR)		// as per StageParticipantGridHandler::__construct()
+					'roles' => array(ROLE_ID_ASSISTANT, ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR)   // as per StageParticipantGridHandler::__construct()
 				),
 				array(
 					'pattern' => $this->getEndpointPattern() . '/{submissionId}/galleys',
@@ -48,6 +48,13 @@ class SubmissionHandler extends APIHandler {
 					'roles' => $roles
 				),
 			),
+                        'POST' => array(
+                                array(
+                                        'pattern' => $this->getEndpointPattern() . '/{submissionId}/files',
+                                        'handler' => array($this,'postFile'),
+                                        'roles' => $roles
+                                )
+                        )
 		);
 		parent::__construct();
 	}
@@ -77,6 +84,15 @@ class SubmissionHandler extends APIHandler {
 			$this->addPolicy(new WorkflowStageAccessPolicy($request, $args, $roleAssignments, 'submissionId', WORKFLOW_STAGE_ID_PRODUCTION));
 		}
 		
+		if ($routeName == 'postFile') {
+		        import('controllers.wizard.fileUpload.FileUploadWizardHandler');
+		        $fileUploadWizardHandler = new FileUploadWizardHandler();
+		        $result = $fileUploadWizardHandler->authorize($request, $args, $roleAssignments);
+		        if (!$result) {
+		                return $result;
+		        }
+		}
+
 		return parent::authorize($request, $args, $roleAssignments);
 	}
 
@@ -178,6 +194,7 @@ class SubmissionHandler extends APIHandler {
 	 * @param $slimRequest Request Slim request object
 	 * @param $response Response object
 	 * @param array $args arguments
+	 * 
 	 * @return Response
 	 */
 	public function submissionMetadata($slimRequest, $response, $args) {
@@ -197,6 +214,46 @@ class SubmissionHandler extends APIHandler {
 			$schema = new Mods34Schema();
 			return $this->getMetadaJSON($submission, $schema);
 		}
+	}
+
+	/**
+	 * Post submission file
+	 * @param $slimRequest Request Slim request object
+	 * @param $response Response object
+	 * @param array $args arguments
+	 * 
+	 * @return Response
+	 */
+	public function postFile($slimRequest, $response, $args) {
+	        $request = $this->getRequest();
+	        $context = $request->getContext();
+	        $user = $request->getUser();
+                $submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
+
+                $fileGenre = $slimRequest->getQueryParam('genreId');
+                $fileStage = $slimRequest->getQueryParam('fileStage');
+                $assocType = $slimRequest->getQueryParam('assocType', null);
+                $assocId = $slimRequest->getQueryParam('assocId', null);
+                $uploaderUserGroupId = $slimRequest->getQueryParam('uploaderUserGroupId');
+
+                $uploadData = array(
+//                         'revisedFileId'         => $revisedFileId,
+                        'fileGenre'             => $fileGenre,
+                        'uploaderUserGroupId'   => $uploaderUserGroupId,
+                        'assocType'             => $assocType,
+                        'assocId'               => $assocId,
+                        'fileStage'             => $fileStage
+                );
+
+                import('classes.core.ServicesContainer');
+                $submissionService = ServicesContainer::instance()->get('submission');
+
+                $submissionFile = $submissionService->saveUploadedFile(
+                        $context->getId(),
+                        $submission->getId(),
+                        $user,
+                        $uploadData
+                );
 	}
 
 	function getMetadaJSON($submission, $schema) {
