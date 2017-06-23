@@ -15,24 +15,24 @@ securityDefinitions:
     name: apiToken
 security:
   - ApiTokenQueryParam: []
-host: localhost:8000
+host: 'localhost:8000'
 basePath: /index.php/publicknowledge/api/v1
 schemes:
   - http
   - https
 tags:
-  - name: "Submissions"
-    description: "It's all about submissions"
-  - name: "Files"
-    description: "Submission files"
-  - name: "Galleys"
-    description: "Submission galleys"
-  - name: "Issues"
-    description: "Issue listing"
-  - name: "Articles"
-    description: "Published articles"
-  - name: "Backend"
-    description: "OJS UI sustaining endpoints"
+  - name: Submissions
+    description: It's all about submissions
+  - name: Files
+    description: Submission files
+  - name: Galleys
+    description: Submission galleys
+  - name: Issues
+    description: Issue listing
+  - name: Articles
+    description: Published articles
+  - name: Backend
+    description: OJS UI sustaining endpoints
 paths:
   '/submissions/{submissionId}':
     get:
@@ -52,11 +52,10 @@ paths:
           description: Stage ID
           required: false
           type: string
-          default: 'dc11'
+          default: dc11
       responses:
         '200':
           description: submission metadata
-          
   '/submissions/{submissionId}/files':
     get:
       tags:
@@ -78,7 +77,62 @@ paths:
       responses:
         '200':
           description: array of submission file metadata
-          
+    post:
+      tags:
+        - Submissions
+      summary: Upload submission file
+      consumes:
+        - multipart/form-data
+      description: |
+        Add a submission file to a specific stage
+      parameters:
+        - in: formData
+          name: uploadedFile
+          type: file
+          description: The file to upload.
+        - name: submissionId
+          in: path
+          description: Submission ID
+          required: true
+          type: integer
+        - name: stageId
+          in: query
+          description: Stage ID
+          required: true
+          type: integer
+        - name: fileStage
+          in: query
+          description: File stage ID
+          required: true
+          type: integer
+        - name: uploaderUserGroupId
+          in: query
+          description: Uploader's user group
+          required: true
+          type: integer
+        - name: genreId
+          in: query
+          description: File genre and category
+          required: false
+          type: integer
+        - name: revisedFileId
+          in: query
+          description: Revised file id (if any)
+          required: false
+          type: integer
+        - name: assocType
+          in: query
+          description: Assoc type
+          required: false
+          type: integer
+        - name: assocId
+          in: query
+          description: Assoc id
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: array of submission file metadata
   '/submissions/{submissionId}/participants':
     get:
       tags:
@@ -101,7 +155,6 @@ paths:
       responses:
         '200':
           description: array of user metadata
-        
   '/submissions/{submissionId}/galleys':
     get:
       tags:
@@ -118,7 +171,22 @@ paths:
       responses:
         '200':
           description: array of galley metadata
-  
+  '/submissions/{submissionId}/metadata':
+    get:
+      tags:
+        - Submissions
+      summary: Submission's metadata
+      description: |
+        Retrieve submission's metadata
+      parameters:
+        - name: submissionId
+          in: path
+          description: Submission ID
+          required: true
+          type: integer
+      responses:
+        '200':
+          description: submission's metadata
   '/files/{fileId}':
     get:
       tags:
@@ -145,7 +213,6 @@ paths:
       responses:
         '200':
           description: binary file
-          
   '/galleys/{representationId}':
     get:
       tags:
@@ -167,8 +234,7 @@ paths:
       responses:
         '200':
           description: binary file
-          
-  '/issues/':
+  /issues/:
     get:
       tags:
         - Issues
@@ -194,7 +260,6 @@ paths:
       responses:
         '200':
           description: array of issues
-      
   '/issues/{issueId}':
     get:
       tags:
@@ -211,7 +276,6 @@ paths:
       responses:
         '200':
           description: issue metadata
-          
   '/articles/{articleId}':
     get:
       tags:
@@ -228,8 +292,7 @@ paths:
       responses:
         '200':
           description: published article
-  
-  '/backend/submissions':
+  /backend/submissions:
     get:
       tags:
         - Backend
@@ -239,7 +302,7 @@ paths:
       parameters:
         - name: orderColumn
           in: query
-          description: Field to order by 
+          description: Field to order by
           required: false
           type: string
           default: id
@@ -248,7 +311,7 @@ paths:
           description: Order direction
           required: false
           type: string
-          default: 'DESC'
+          default: DESC
         - name: assignedTo
           in: query
           description: Assignee user ID
@@ -279,8 +342,7 @@ paths:
       responses:
         '200':
           description: array of submissions
-          
-  '/backend/users':
+  /backend/users:
     get:
       tags:
         - Backend
@@ -290,7 +352,7 @@ paths:
       parameters:
         - name: userGroupId
           in: query
-          description: User group ID 
+          description: User group ID
           required: false
           type: integer
         - name: includeNoRole
@@ -314,7 +376,10 @@ paths:
           description: Search match
           required: false
           type: string
-          enum: ["is", "contains", "startsWith"]
+          enum:
+            - is
+            - contains
+            - startsWith
       responses:
         '200':
           description: array of users
