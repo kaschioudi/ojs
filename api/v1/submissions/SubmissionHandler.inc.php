@@ -28,33 +28,45 @@ class SubmissionHandler extends APIHandler {
                 $this->_endpoints = array(
                                 'GET' => array (
                                                 array(
-                                                                'pattern' => $this->getEndpointPattern() . '/{submissionId}/files',
-                                                                'handler' => array($this,'getFiles'),
-                                                                'roles' => $roles
+                                                        'pattern' => $this->getEndpointPattern() . '/{submissionId}/files',
+                                                        'handler' => array($this,'getFiles'),
+                                                        'roles' => $roles
                                                 ),
                                                 array(
-                                                                'pattern' => $this->getEndpointPattern() . '/{submissionId}',
-                                                                'handler' => array($this,'submissionMetadata'),
-                                                                'roles' => $roles
+                                                        'pattern' => $this->getEndpointPattern() . '/{submissionId}/metadata',
+                                                        'handler' => array($this,'getMetadata'),
+                                                        'roles' => $roles
                                                 ),
                                                 array(
-                                                                'pattern' => $this->getEndpointPattern() . '/{submissionId}/participants',
-                                                                'handler' => array($this,'getParticipants'),
-                                                                'roles' => array(ROLE_ID_ASSISTANT, ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR)   // as per StageParticipantGridHandler::__construct()
+                                                        'pattern' => $this->getEndpointPattern() . '/{submissionId}',
+                                                        'handler' => array($this,'submissionMetadata'),
+                                                        'roles' => $roles
                                                 ),
                                                 array(
-                                                                'pattern' => $this->getEndpointPattern() . '/{submissionId}/galleys',
-                                                                'handler' => array($this,'getGalleys'),
-                                                                'roles' => $roles
+                                                        'pattern' => $this->getEndpointPattern() . '/{submissionId}/participants',
+                                                        'handler' => array($this,'getParticipants'),
+                                                        'roles' => array(ROLE_ID_ASSISTANT, ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR)   // as per StageParticipantGridHandler::__construct()
+                                                ),
+                                                array(
+                                                        'pattern' => $this->getEndpointPattern() . '/{submissionId}/galleys',
+                                                        'handler' => array($this,'getGalleys'),
+                                                        'roles' => $roles
                                                 ),
                                 ),
                                 'POST' => array(
                                                 array(
-                                                                'pattern' => $this->getEndpointPattern() . '/{submissionId}/files',
-                                                                'handler' => array($this,'postFile'),
-                                                                'roles' => $roles
+                                                        'pattern' => $this->getEndpointPattern() . '/{submissionId}/files',
+                                                        'handler' => array($this,'postFile'),
+                                                        'roles' => $roles
                                                 )
-                                )
+                                ),
+                                'PUT' => array(
+                                                array(
+                                                        'pattern' => $this->getEndpointPattern() . '/{submissionId}/metadata',
+                                                        'handler' => array($this,'editMetadata'),
+                                                        'roles' => $roles
+                                                )
+                                ),
                 );
                 parent::__construct();
         }
@@ -87,9 +99,9 @@ class SubmissionHandler extends APIHandler {
                 if ($routeName == 'postFile') {
                         import('controllers.wizard.fileUpload.FileUploadWizardHandler');
                         $fileUploadWizardHandler = new FileUploadWizardHandler();
-                        $result = $fileUploadWizardHandler->authorize($request, $args, $roleAssignments);
-                        if (!$result) {
-                                return $result;
+                        $authorize = $fileUploadWizardHandler->authorize($request, $args, $roleAssignments);
+                        if (!$authorize) {
+                                return $authorize;
                         }
                 }
 
@@ -256,14 +268,15 @@ class SubmissionHandler extends APIHandler {
                 $user = $request->getUser();
                 $submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
 
-                $fileGenre = $slimRequest->getQueryParam('genreId');
+                $revisedFileId = $slimRequest->getQueryParam('revisedFileId');
+                $fileGenre = $revisedFileId ? null : (int) $slimRequest->getQueryParam('genreId');
                 $fileStage = $slimRequest->getQueryParam('fileStage');
                 $assocType = $slimRequest->getQueryParam('assocType', null);
                 $assocId = $slimRequest->getQueryParam('assocId', null);
                 $uploaderUserGroupId = $slimRequest->getQueryParam('uploaderUserGroupId');
 
                 $uploadData = array(
-//                         'revisedFileId'         => $revisedFileId,
+                        'revisedFileId'         => $revisedFileId,
                         'fileGenre'             => $fileGenre,
                         'uploaderUserGroupId'   => $uploaderUserGroupId,
                         'assocType'             => $assocType,
@@ -340,6 +353,67 @@ class SubmissionHandler extends APIHandler {
                 
                 $data = $this->buildSubmissionFileDataEntry($submissionFile);
                 return $response->withJson($data, 200);
+        }
+
+        /**
+         * Get submission metadata
+         * @param $slimRequest Request Slim request object
+         * @param $response Response object
+         * @param array $args arguments
+         *
+         * @return Response
+         */
+        public function getMetadata($slimRequest, $response, $args) {
+                $request = $this->getRequest();
+                $context = $request->getContext();
+                $submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
+                if (!$submission) {
+                        return $response->withStatus(404)->withJsonError('api.submissions.404.resourceNotFound');
+                }
+
+                import('classes.core.ServicesContainer');
+                $submissionService = ServicesContainer::instance()->get('submission');
+
+                // section
+                $sectionDao = DAORegistry::getDAO('SectionDAO');
+                $sectionOptions = $sectionDao->getTitles($submission->getContextId());
+                $sectionId = $submission->getSectionId();
+                $section = $sectionOptions[$sectionId];
+
+                $metadata = array(
+                        'sectionId'     => $sectionId,
+                        'section'       => $section,
+                        'coverImage'    => $submission->getCoverImage(null),
+                );
+
+                $metadata = array_merge($metadata, $submissionService->getMetadata($submission));
+
+                // load persisted metadata
+                $supportedLocales = array_keys(AppLocale::getSupportedFormLocales());
+                $persistedMetadataControlledVocabularies = $submissionService->getPersistedMetadataControlledVocabularies($submission, $supportedLocales);
+                $metadata = array_merge($metadata, $persistedMetadataControlledVocabularies);
+
+                // limit to enabled confirugable fields
+                import('lib.pkp.controllers.grid.settings.metadata.MetadataGridHandler');
+                foreach (array_keys(MetadataGridHandler::getNames()) as $field) {
+                        if (!$context->getSetting($field . 'EnabledWorkflow')) {
+                                unset($metadata[$field]);
+                        }
+                }
+
+                return $response->withJson($metadata, 200);
+        }
+
+        /**
+         * Edit submission metadata
+         * @param $slimRequest Request Slim request object
+         * @param $response Response object
+         * @param array $args arguments
+         *
+         * @return Response
+         */
+        public function editMetadata($slimRequest, $response, $args) {
+                print "let's do this!";
         }
 
         function getMetadaJSON($submission, $schema) {
