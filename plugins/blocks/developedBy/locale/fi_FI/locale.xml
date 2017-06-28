@@ -2,16 +2,17 @@
 <!DOCTYPE locale SYSTEM "../../../../../lib/pkp/dtd/locale.dtd">
 
 <!--
-  * plugins/generic/googleScholar/locale/en_US/locale.xml
+  * locale.xml
   *
   * Copyright (c) 2014-2017 Simon Fraser University
   * Copyright (c) 2003-2017 John Willinsky
+  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
   * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
   * Localization information: https://pkp.sfu.ca/wiki/index.php?title=Translating_OxS
   * Localization strings.
   -->
 
-<locale name="en_US" full_name="U.S. English">
-	<message key="plugins.generic.googleScholar.name">Google Scholar Indexing Plugin</message>
-	<message key="plugins.generic.googleScholar.description">This plugin enables indexing of published content in Google Scholar.</message>
+<locale name="fi_FI" full_name="Suomi">
+	<message key="plugins.block.developedBy.displayName">"Kehittänyt"-lohko</message>
+	<message key="plugins.block.developedBy.description">Tämä lohkolisäosa näyttää sivupalkissa "Kehittänyt"-linkin.</message>
 </locale>

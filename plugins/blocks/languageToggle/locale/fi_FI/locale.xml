@@ -2,7 +2,7 @@
 <!DOCTYPE locale SYSTEM "../../../../../lib/pkp/dtd/locale.dtd">
 
 <!--
-  * plugins/generic/googleScholar/locale/en_US/locale.xml
+  * plugins/blocks/languageToggle/locale/fi_FI/locale.xml
   *
   * Copyright (c) 2014-2017 Simon Fraser University
   * Copyright (c) 2003-2017 John Willinsky
@@ -10,8 +10,8 @@
   * Localization information: https://pkp.sfu.ca/wiki/index.php?title=Translating_OxS
   * Localization strings.
   -->
-
-<locale name="en_US" full_name="U.S. English">
-	<message key="plugins.generic.googleScholar.name">Google Scholar Indexing Plugin</message>
-	<message key="plugins.generic.googleScholar.description">This plugin enables indexing of published content in Google Scholar.</message>
+ 
+<locale name="fi_FI" full_name="Suomi">
+	<message key="plugins.block.languageToggle.displayName">Kielivalintalohko</message>
+	<message key="plugins.block.languageToggle.description">Tämä lohkolisäosa näyttää linkit lehden kieliversioihin.</message>
 </locale>
