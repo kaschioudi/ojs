@@ -10,7 +10,8 @@ language: php
 php:
   - 5.6
   - 7.1
-group: deprecated-2017Q1
+# group: deprecated-2017Q1
+dist: trusty
 python:
   - 3.3
 addons:
@@ -18,8 +19,10 @@ addons:
 git:
   # We have to init submodules ourselves to make it recursive
   submodules: false
-
+addons:
+  firefox: "45.9.0esr"
 before_install:
+
   # Start submodules
   - ./tools/startSubmodulesTRAVIS.sh
 
