@@ -92,12 +92,12 @@ class IssuesHandler extends APIHandler {
 		
 		while ($issue = $issues->next()) {
 			$data[] = array(
-				'id'				=> $issue->getBestIssueId(),
-				'title'				=> $issue->getLocalizedTitle(),
-				'series'			=> $issue->getIssueSeries(),
-				'datePublished'		=> $issue->getDatePublished(),
-				'lastModified'		=> $issue->getLastModified(),
-				'current'			=> (bool) ($issue->getCurrent() == $issue->getBestIssueId()),
+				'id'		=> $issue->getBestIssueId(),
+				'title'		=> $issue->getLocalizedTitle(),
+				'series'	=> $issue->getIssueSeries(),
+				'datePublished'	=> $issue->getDatePublished(),
+				'lastModified'	=> $issue->getLastModified(),
+				'current'	=> (bool) ($issue->getCurrent() == $issue->getBestIssueId()),
 			);
 		}
 		
