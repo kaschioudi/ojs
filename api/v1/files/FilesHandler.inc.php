@@ -27,12 +27,12 @@ class FilesHandler extends APIHandler {
 		$roles = array(ROLE_ID_MANAGER, ROLE_ID_SUB_EDITOR, ROLE_ID_ASSISTANT, ROLE_ID_REVIEWER, ROLE_ID_AUTHOR);
 		$this->_endpoints = array(
 			'GET' => array (
-					array(
-						'pattern' => $this->getEndpointPattern() . '/{fileId}',
-						'handler' => array($this,'getFile'),
-						'roles' => $roles
-					),
-				)
+				array(
+					'pattern' => $this->getEndpointPattern() . '/{fileId}',
+					'handler' => array($this,'getFile'),
+					'roles' => $roles
+				),
+			)
 		);
 		parent::__construct();
 	}

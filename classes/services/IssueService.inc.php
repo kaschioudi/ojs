@@ -15,6 +15,8 @@
 
 namespace OJS\Services;
 
+use \Journal;
+
 class IssueService {
 
 	/**
@@ -25,7 +27,7 @@ class IssueService {
 	 *
 	 * @return boolean
 	 */
-	public function userHasAccessToGalleys(\Journal $journal, \Issue $issue) {
+	public function userHasAccessToGalleys(Journal $journal, \Issue $issue) {
 		import('classes.issue.IssueAction');
 		$issueAction = new \IssueAction();
 
@@ -34,5 +36,29 @@ class IssueService {
 		$subscribedDomain = $issueAction->subscribedDomain($journal, $issue);
 
 		return !$subscriptionRequired || $issue->getAccessStatus() == ISSUE_ACCESS_OPEN || $subscribedUser || $subscribedDomain;
+	}
+
+	/**
+	 * Determine issue access status based on journal publishing mode
+	 * @param \Journal $journal
+	 *
+	 * @return int
+	 */
+	public function determineAccessStatus(Journal $journal) {
+		import('classes.issue.Issue');
+		$accessStatus = null;
+
+		switch ($journal->getSetting('publishingMode')) {
+			case PUBLISHING_MODE_SUBSCRIPTION:
+			case PUBLISHING_MODE_NONE:
+				$accessStatus = ISSUE_ACCESS_SUBSCRIPTION;
+				break;
+			case PUBLISHING_MODE_OPEN:
+			default:
+				$accessStatus = ISSUE_ACCESS_OPEN;
+				break;
+		}
+
+		return $accessStatus;
 	}
 }

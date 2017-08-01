@@ -17,6 +17,8 @@
 import('lib.pkp.classes.handler.APIHandler');
 import('classes.core.ServicesContainer');
 
+use \Exception;
+
 class SubmissionHandler extends APIHandler {
 
 	/**
@@ -48,6 +50,20 @@ class SubmissionHandler extends APIHandler {
 					'roles' => $roles
 				),
 			),
+			'POST' => array(
+				array(
+					'pattern' => $this->getEndpointPattern() . '/{submissionId}/files',
+					'handler' => array($this,'postFile'),
+					'roles' => $roles
+				)
+			),
+			'PUT' => array(
+				array(
+					'pattern' => $this->getEndpointPattern() . '/{submissionId}/files/{fileId}',
+					'handler' => array($this,'editFileMetadata'),
+					'roles' => $roles
+				)
+			),
 		);
 		parent::__construct();
 	}
@@ -77,7 +93,60 @@ class SubmissionHandler extends APIHandler {
 			$this->addPolicy(new WorkflowStageAccessPolicy($request, $args, $roleAssignments, 'submissionId', WORKFLOW_STAGE_ID_PRODUCTION));
 		}
 
+		if ($routeName == 'postFile') {
+			import('controllers.wizard.fileUpload.FileUploadWizardHandler');
+			$fileUploadWizardHandler = new FileUploadWizardHandler();
+			$authorize = $fileUploadWizardHandler->authorize($request, $args, $roleAssignments);
+			if (!$authorize) {
+				return $authorize;
+			}
+		}
+
+		if ($routeName == 'editFileMetadata') {
+			import('lib.pkp.classes.security.authorization.SubmissionFileAccessPolicy');
+			$this->addPolicy(new SubmissionFileAccessPolicy($request, $args, $roleAssignments));
+		}
+
 		return parent::authorize($request, $args, $roleAssignments);
+	}
+
+	/**
+	 * Helper function that returns submission file metadata
+	 * @param \SubmissionFile $submissionFile
+	 */
+	protected function buildSubmissionFileDataEntry($submissionFile) {
+		$entry = array(
+			'fileId'           => $submissionFile->getFileId(),
+			'revision'         => $submissionFile->getRevision(),
+			'submissionId'     => $submissionFile->getSubmissionId(),
+			'filename'         => $submissionFile->getName(),
+			'fileLabel'        => $submissionFile->getFileLabel(),
+			'fileStage'        => $submissionFile->getFileStage(),
+			'uploaderUserId'   => $submissionFile->getUploaderUserId(),
+			'userGroupId'      => $submissionFile->getUserGroupId()
+		);
+		if (is_a($submissionFile, 'SupplementaryFile')) {
+			$entry['metadata'] = array(
+				'description'   => $submissionFile->getDescription(null),
+				'creator'       => $submissionFile->getCreator(null),
+				'publisher'     => $submissionFile->getPublisher(null),
+				'source'        => $submissionFile->getSource(null),
+				'subject'       => $submissionFile->getSubject(null),
+				'sponsor'       => $submissionFile->getSponsor(null),
+				'dateCreated'   => $submissionFile->getDateCreated(null),
+				'language'      => $submissionFile->getLanguage(),
+			);
+		}
+		if (is_a($submissionFile, 'SubmissionArtworkFile')) {
+			$entry['metadata'] = array(
+				'caption'               => $submissionFile->getCaption(),
+				'credit'                => $submissionFile->getCredit(),
+				'copyrightOwner'        => $submissionFile->getCopyrightOwner(),
+				'CopyrightOwnerContact' => $submissionFile->getCopyrightOwnerContactDetails(),
+				'permissionTerms'       => $submissionFile->getPermissionTerms(),
+			);
+		}
+		return $entry;
 	}
 
 	/**
@@ -102,37 +171,7 @@ class SubmissionHandler extends APIHandler {
 			$fileStage = $slimRequest->getQueryParam('fileStage');
 			$submissionFiles = $submissionService->getFiles($context->getId(), $submission, $fileStage);
 			foreach ($submissionFiles as $submissionFile) {
-				$entry = array(
-					'fileId'           => $submissionFile->getFileId(),
-					'revision'         => $submissionFile->getRevision(),
-					'submissionId'     => $submissionFile->getSubmissionId(),
-					'filename'         => $submissionFile->getName(),
-					'fileLabel'        => $submissionFile->getFileLabel(),
-					'fileStage'        => $submissionFile->getFileStage(),
-					'uploaderUserId'   => $submissionFile->getUploaderUserId(),
-					'userGroupId'      => $submissionFile->getUserGroupId()
-				);
-				if (is_a($submissionFile, 'SupplementaryFile')) {
-				        $entry['metadata'] = array(
-                                                'description'   => $submissionFile->getDescription(null),
-                                                'creator'       => $submissionFile->getCreator(null),
-                                                'publisher'     => $submissionFile->getPublisher(null),
-                                                'source'        => $submissionFile->getSource(null),
-                                                'subject'       => $submissionFile->getSubject(null),
-                                                'sponsor'       => $submissionFile->getSponsor(null),
-                                                'date'          => $submissionFile->getDateCreated(null),
-                                                'language'      => $submissionFile->getLanguage(),
-				        );
-				}
-				if (is_a($submissionFile, 'SubmissionArtworkFile')) {
-				        $entry['metadata'] = array(
-                                                'caption'               => $submissionFile->getCaption(),
-                                                'credit'                => $submissionFile->getCredit(),
-                                                'copyrightOwner'        => $submissionFile->getCopyrightOwner(),
-                                                'permissionTerms'       => $submissionFile->getPermissionTerms(),
-				        );
-				}
-				$data[] = $entry;
+				$data[] = $this->buildSubmissionFileDataEntry($submissionFile);
 			}
 		}
 		catch (PKP\Services\Exceptions\InvalidSubmissionException $e) {
@@ -346,6 +385,136 @@ class SubmissionHandler extends APIHandler {
 			'citations'	=> $citations,
 		);
 
+		return $response->withJson($data, 200);
+	}
+
+	/**
+	 * Post submission file
+	 * @param $slimRequest Request Slim request object
+	 * @param $response Response object
+	 * @param array $args arguments
+	 *
+	 * @return Response
+	 */
+	public function postFile($slimRequest, $response, $args) {
+		$request = $this->getRequest();
+		$context = $request->getContext();
+		$user = $request->getUser();
+		$submission = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION);
+		$revisedFileId = $slimRequest->getQueryParam('revisedFileId');
+		$genreId = $revisedFileId ? null : (int) $slimRequest->getQueryParam('genreId');
+		$fileStage = $slimRequest->getQueryParam('fileStage');
+		$assocType = $slimRequest->getQueryParam('assocType', null);
+		$assocId = $slimRequest->getQueryParam('assocId', null);
+		$uploaderUserGroupId = $slimRequest->getQueryParam('uploaderUserGroupId');
+		$uploadData = array(
+			'revisedFileId'         => $revisedFileId,
+			'genreId'             	=> $genreId,
+			'uploaderUserGroupId'   => $uploaderUserGroupId,
+			'assocType'             => $assocType,
+			'assocId'               => $assocId,
+			'fileStage'             => $fileStage
+		);
+
+		try {
+			import('classes.core.ServicesContainer');
+			$submissionService = ServicesContainer::instance()->get('submission');
+			$submissionFile = $submissionService->saveUploadedFile(
+				$context->getId(),
+				$submission->getId(),
+				$user,
+				$uploadData
+			);
+		}
+		catch (Exception $e) {
+			return $response->withStatus(400)->withJson(array(
+				'error' 	=> 'api.submissions.400.missingRequired',
+				'errorMessage'	=> $e->getMessage(),
+			));
+		}
+
+		if (!$submissionFile) {
+			return $response->withStatus(400)->withJsonError('api.submissions.400.missingRequired');
+		}
+
+		$this->updateFileMetadata($submissionFile, $slimRequest->getParams());
+
+		// Persist the submission file.
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+		$submissionFileDao->updateObject($submissionFile);
+
+		$data = $this->buildSubmissionFileDataEntry($submissionFile);
+		return $response->withJson($data, 200);
+	}
+
+	/**
+	 * set file metadata from query string parameter
+	 *
+	 * @param $slimRequest Request Slim request object
+	 * @param array $submittedData user submitted data
+	 *
+	 * @return boolean
+	 */
+	protected function updateFileMetadata($submissionFile, $submittedData) {
+		$dirty = false;
+
+		// set name if provided
+		if (isset($submittedData['name']) && !is_null($submittedData['name'])) {
+			$submissionFile->setName($submittedData['name'], null);
+			$dirty = true;
+		}
+
+		// set supplementary file metadata
+		if (is_a($submissionFile, 'SupplementaryFile')) {
+			$validFields = array(
+				'description','creator','publisher','source','subject','sponsor','dateCreated','language',
+			);
+			foreach ($validFields as $field) {
+				if (isset($submittedData[$field]) && !is_null($submittedData[$field])) {
+					$dirty = true;
+					$setter = 'set' . ucfirst($field);
+					$submissionFile->$setter($submittedData[$field], null);
+				}
+			}
+		}
+
+		// set submission artwork file metadata
+		if (is_a($submissionFile, 'SubmissionArtworkFile')) {
+			$validFields = array(
+				'artworkCaption','artworkCredit','artworkCopyrightOwner','artworkCopyrightOwnerContact','artworkPermissionTerms',
+			);
+			foreach ($validFields as $field) {
+				if (isset($submittedData[$field]) && !is_null($submittedData[$field])) {
+					$dirty = true;
+					$setter = 'set' . str_replace('artwork', '', $field);
+					$submissionFile->$setter($submittedData[$field], null);
+				}
+			}
+		}
+
+		return $dirty;
+	 }
+
+
+	/**
+	 * Edit submission file metadata
+	 * @param $slimRequest Request Slim request object
+	 * @param $response Response object
+	 * @param array $args arguments
+	 *
+	 * @return Response
+	 */
+	public function editFileMetadata($slimRequest, $response, $args) {
+		$submittedData = $slimRequest->getParams();
+		$submissionFile = $this->getAuthorizedContextObject(ASSOC_TYPE_SUBMISSION_FILE);
+
+		$dirty = $this->updateFileMetadata($submissionFile, $submittedData);
+		if ($dirty) {
+			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+			$submissionFileDao->updateObject($submissionFile);
+		}
+
+		$data = $this->buildSubmissionFileDataEntry($submissionFile);
 		return $response->withJson($data, 200);
 	}
 }
